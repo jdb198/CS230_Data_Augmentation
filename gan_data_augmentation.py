@@ -175,8 +175,7 @@ num_examples_to_generate = 1
 seed = tf.random.normal([num_examples_to_generate, noise_dim])
 seed2 = tf.random.uniform([num_examples_to_generate, 1], minval=0, maxval=num_classes, dtype=tf.int32)
 
-# Notice the use of `tf.function`
-# This annotation causes the function to be "compiled".  This is overly complicated and I will change it later on
+
 @tf.function
 def train_step(images, labels):
     noise = tf.random.normal([BATCH_SIZE, noise_dim])
