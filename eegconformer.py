@@ -44,22 +44,35 @@ classes = list(range(2))
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-lr = 0.0625 * 0.01
-weight_decay = 0
-batch_size = 256
-n_epochs = 5
+lr = 0.00001
+weight_decay = 0.001
+batch_size = 128
+n_epochs = 400
+
+num_created = 3240
+filename_left = 'Conditional_GAN_Data/data_left' + str(num_created) + '.csv'
+filename_right = 'Conditional_GAN_Data/data_right' +str(num_created) + '.csv'
 
 #parameters 120, 3, 1000
 input_window_samples  = 1000
 n_channels = 3
 n_outputs = 2
 
+""" Load Augmented Data """
+aug_data_left = np.loadtxt(filename_left, delimiter=',')
+aug_data_left = aug_data_left.reshape(num_created, 3, 1000)
+aug_labels_left = np.zeros(num_created)
+
+aug_data_right = np.loadtxt(filename_right, delimiter=',')
+aug_data_right = aug_data_right.reshape(num_created, 3, 1000)
+aug_labels_right = np.ones(num_created)
+
 """# Training Data Load in"""
 
 # Commented out IPython magic to ensure Python compatibility.
 # %cd /content/drive/MyDrive/CS230/GAN/EEG_2B_Data/
 data_training =  np.empty((1000, 3, 3240)) # empty np array that concatenates all of the trials
-label_training = [] #np.empty((3240,1))
+label_training = []  # np.empty((3240,1))
 list_of_files_training = ['B0901T.mat', 'B0902T.mat', 'B0903T.mat', 'B0801T.mat', 'B0802T.mat', 'B0803T.mat','B0701T.mat', 'B0702T.mat', 'B0703T.mat',
                  'B0601T.mat', 'B0602T.mat', 'B0603T.mat', 'B0501T.mat', 'B0502T.mat', 'B0503T.mat', 'B0401T.mat', 'B0402T.mat', 'B0403T.mat',
                 'B0301T.mat', 'B0302T.mat', 'B0303T.mat', 'B0201T.mat', 'B0202T.mat', 'B0203T.mat', 'B0101T.mat', 'B0102T.mat', 'B0103T.mat']
@@ -144,9 +157,12 @@ class EEGDataSet(Dataset):
     return data, label
 
 """#Load Training Data"""
-
 training_data = NormalizeData(data_training)
-training_dataset = EEGDataSet(training_data, labels_training)
+
+all_training_data = np.concatenate((data_training, aug_data_right, aug_data_left), axis =0)
+all_training_labels = np.concatenate((labels_training, aug_labels_right, aug_labels_left), axis=0)
+
+training_dataset = EEGDataSet(all_training_data, all_training_labels)
 #data_loader_training = DataLoader(training_dataset, batch_size=256, shuffle=True)
 
 """#Load Test Data"""
@@ -253,6 +269,7 @@ test_loader = DataLoader(test_dataset, batch_size = batch_size, shuffle=False)
 
 train_losses = []
 train_accuracies = []
+test_accuracies = []
 for epoch in range(1, n_epochs +1):
   print(f"Epoch {epoch}/{n_epochs} :", end="")
 
@@ -263,13 +280,25 @@ for epoch in range(1, n_epochs +1):
 
   train_losses.append(train_loss)
   train_accuracies.append(train_accuracy)
+  test_accuracies.append(test_accuracy)
 
+plt.figure(1)
 plt.plot(train_losses, label="Train Loss")
 plt.plot(train_accuracies, label="Train Accuracy")
 plt.xlabel("Epoch")
 plt.ylabel("Loss/Accuracy")
 plt.legend()
+plt.title('Conformer Loss and Accuracy ')
 plt.show()
+
+plt.figure(2)
+plt.plot(test_accuracies)
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.title('Test Accuracy after each training Epoch')
+plt.show()
+
+
 
 end_time = time.time()
 elapsed_time = end_time - start_time
